@@ -16,7 +16,7 @@ describe("NFT", async function () {
         [deployer, user] = await ethers.getSigners();
 
         const NFT = await ethers.getContractFactory("NFT");
-        nft = await NFT.deploy(TOKEN_BASE_URI, FREE_MINTS, MINT_PRICE);
+        nft = await NFT.deploy(TOKEN_BASE_URI, FREE_MINTS, MINT_PRICE, deployer.address);
 
         await nft.deployed();
     });
