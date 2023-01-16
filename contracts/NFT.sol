@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract NFT is ERC721, ReentrancyGuard, Ownable {
     // base uri for metadata, this can only be updated once during reveal
-    string uri;
+    string public uri;
     // If true, minting will be paused
     bool public mintPaused;
     // The price of minting a single NFT in ETH
@@ -33,7 +33,7 @@ contract NFT is ERC721, ReentrancyGuard, Ownable {
     bool public revealed;
 
     // maximum size of nfts to be minted in this collection
-    uint256 constant MAX_COLLECTION_SIZE = 10_000;
+    uint256 public constant MAX_COLLECTION_SIZE = 10;
 
     // Reverts if minting is paused
     modifier mintNotPaused() {
@@ -62,10 +62,10 @@ contract NFT is ERC721, ReentrancyGuard, Ownable {
         if (mintPrice > 0 && (freeMintLeft == 0 || freeMintPaused)) {
             require(msg.value == mintPrice, "Invalid eth payment");
             payable(paymentRecipient).transfer(msg.value);
-            require(priceMintedCount[msg.sender]++ <= maxPriceMintLimit, "Max wallet mint limit reached");
+            require(priceMintedCount[msg.sender]++ < maxPriceMintLimit, "Max wallet price mint limit reached");
         } else {
             require(msg.value == 0, "eth amount should be zero");
-            require(freeMintedCount[msg.sender]++ <= maxFreeMintLimit, "Max wallet mint limit reached");
+            require(freeMintedCount[msg.sender]++ < maxFreeMintLimit, "Max wallet free mint limit reached");
         }
         _mint(msg.sender, nextTokenId);
         require(nextTokenId++ < MAX_COLLECTION_SIZE, "Max already minted");
