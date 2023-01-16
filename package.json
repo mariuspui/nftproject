@@ -26,7 +26,6 @@
         "chai": "^4.3.7",
         "dotenv": "^16.0.3",
         "eslint": "^8.30.0",
-        "ethereum-waffle": "^3.4.4",
         "ethers": "^5.7.2",
         "hardhat-gas-reporter": "^1.0.9",
         "solhint": "^3.3.7",
