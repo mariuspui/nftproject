@@ -51,7 +51,7 @@ describe("NFT", async function () {
     });
 
     it("Should mint free nft when price is zero", async function () {
-        // await (await nft.setMintPrice(0)).wait();
+        await (await nft.setMintPrice(0)).wait();
         expect(await nft.mint());
         await (await nft.setMintPrice(MINT_PRICE)).wait();
     });
