@@ -4,8 +4,9 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/token/common/ERC2981.sol";
 
-contract NFT is ERC721, ReentrancyGuard, Ownable {
+contract NFT is ERC721, ERC2981, ReentrancyGuard, Ownable {
     // base uri for metadata, this can only be updated once during reveal
     string public uri;
     // If true, minting will be paused
@@ -47,10 +48,24 @@ contract NFT is ERC721, ReentrancyGuard, Ownable {
 
     event Revealed(string indexed uri, uint256 timestamp);
 
-    constructor(string memory _uri, uint256 _freeMintLeft, uint256 _mintPrice) ERC721("NFT Project", "NFT") {
+    constructor(
+        string memory _uri,
+        uint256 _freeMintLeft,
+        uint256 _mintPrice,
+        address _paymentRecipient
+    ) ERC721("NFT Project", "NFT") {
         uri = _uri;
         freeMintLeft = _freeMintLeft;
         mintPrice = _mintPrice;
+        paymentRecipient = _paymentRecipient;
+        _setDefaultRoyalty(_paymentRecipient, 1000); // 10% royalty
+    }
+
+    function supportsInterface(bytes4 interfaceId) public view virtual override(ERC721, ERC2981) returns (bool) {
+        return
+            ERC721.supportsInterface(interfaceId) ||
+            ERC2981.supportsInterface(interfaceId) ||
+            super.supportsInterface(interfaceId);
     }
 
     function _baseURI() internal view override returns (string memory) {
@@ -91,6 +106,10 @@ contract NFT is ERC721, ReentrancyGuard, Ownable {
         uri = _uri;
         revealed = true;
         emit Revealed(uri, block.timestamp);
+    }
+
+    function setDefaultRoyalty(address receiver, uint96 feeNumerator) external onlyOwner {
+        _setDefaultRoyalty(receiver, feeNumerator);
     }
 
     function setMintPaused(bool _paused) external onlyOwner {
