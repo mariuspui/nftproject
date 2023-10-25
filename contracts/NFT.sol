@@ -86,6 +86,7 @@ contract NFT is ERC721, ERC2981, ReentrancyGuard, Ownable {
             // free mint
             require(msg.value == 0, "eth amount should be zero");
             require(freeMintedCount[msg.sender]++ < maxFreeMintLimit, "Max wallet free mint limit reached");
+            freeMintLeft--;
         }
         _mint(msg.sender, nextTokenId);
         require(nextTokenId++ < MAX_COLLECTION_SIZE, "Max already minted");
