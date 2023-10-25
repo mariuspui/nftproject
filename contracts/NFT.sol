@@ -92,6 +92,18 @@ contract NFT is ERC721, ERC2981, ReentrancyGuard, Ownable {
         require(nextTokenId <= MAX_COLLECTION_SIZE - maxOwnerMintLimit, "Max already minted");
     }
 
+    function batchMint(uint256 quantity) external payable mintNotPaused nonReentrant {
+        uint256 totalPrice = mintPrice * quantity;
+        require(msg.value == totalPrice, "Invalid eth payment");
+        payable(paymentRecipient).transfer(msg.value);
+
+        for (uint i = 0; i < quantity; i++) {
+            require(priceMintedCount[msg.sender]++ < maxPriceMintLimit, "Max wallet price mint limit reached");
+            _mint(msg.sender, nextTokenId++);
+            require(nextTokenId <= MAX_COLLECTION_SIZE - maxOwnerMintLimit, "Max already minted");
+        }
+    }
+
     function ownerMint(address to, uint256 quantity) external onlyOwner {
         for (uint i = 0; i < quantity; i++) {
             _mint(to, nextTokenId++);
