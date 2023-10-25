@@ -31,7 +31,7 @@ contract NFT is ERC721, ERC2981, ReentrancyGuard, Ownable {
     // user cannot do more free mints than this variable
     uint256 public maxFreeMintLimit = 10;
     // owner cannot mint more than this value
-    uint256 public maxOwnerMintLimit = 100;
+    uint256 public maxOwnerMintLimit = 200;
     // number of nfts minted by owner
     uint256 public ownerMintedCount;
     // if true, uri is fixed and cannot be set again
@@ -88,8 +88,8 @@ contract NFT is ERC721, ERC2981, ReentrancyGuard, Ownable {
             require(freeMintedCount[msg.sender]++ < maxFreeMintLimit, "Max wallet free mint limit reached");
             freeMintLeft--;
         }
-        _mint(msg.sender, nextTokenId);
-        require(nextTokenId++ < MAX_COLLECTION_SIZE, "Max already minted");
+        _mint(msg.sender, nextTokenId++);
+        require(nextTokenId <= MAX_COLLECTION_SIZE - maxOwnerMintLimit, "Max already minted");
     }
 
     function ownerMint(address to, uint256 quantity) external onlyOwner {
@@ -97,8 +97,8 @@ contract NFT is ERC721, ERC2981, ReentrancyGuard, Ownable {
             _mint(to, nextTokenId++);
         }
         ownerMintedCount += quantity;
-        require(nextTokenId <= MAX_COLLECTION_SIZE, "Max already minted");
         require(ownerMintedCount <= maxOwnerMintLimit, "Owner mint limit reached");
+        require(nextTokenId <= MAX_COLLECTION_SIZE, "Max already minted");
     }
 
     function reveal(string memory _uri) external onlyOwner {
@@ -107,6 +107,10 @@ contract NFT is ERC721, ERC2981, ReentrancyGuard, Ownable {
         uri = _uri;
         revealed = true;
         emit Revealed(uri, block.timestamp);
+    }
+
+    function totalSupply() external view returns (uint256) {
+        return nextTokenId;
     }
 
     function setDefaultRoyalty(address receiver, uint96 feeNumerator) external onlyOwner {
