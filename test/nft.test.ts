@@ -75,9 +75,7 @@ describe("NFT", async function() {
         const userFreeMintLeft =
             (await nft.maxFreeMintLimit()).toNumber() - (await nft.freeMintedCount(user.address)).toNumber();
 
-        for (let i = 0; i < userFreeMintLeft - 1; i++) {
-            expect(await nft.connect(user).mint(1));
-        }
+        expect(await nft.connect(user).mint(userFreeMintLeft - 1));
         await expect(nft.connect(user).mint(1)).to.revertedWith("Max wallet free mint limit reached");
     });
 
@@ -87,9 +85,7 @@ describe("NFT", async function() {
         const userPriceMintLeft =
             (await nft.maxPriceMintLimit()).toNumber() - (await nft.priceMintedCount(user.address)).toNumber();
 
-        for (let i = 0; i < userPriceMintLeft - 1; i++) {
-            expect(await nft.connect(user).mint(1, { value: MINT_PRICE }));
-        }
+        expect(await nft.connect(user).mint(userPriceMintLeft - 1, { value: MINT_PRICE.mul(userPriceMintLeft - 1) }));
         await expect(nft.connect(user).mint(1, { value: MINT_PRICE })).to.revertedWith(
             "Max wallet price mint limit reached"
         );
