@@ -37,7 +37,7 @@ describe("NFT", async function() {
         await (await nft.setFreeMintPaused(false)).wait();
 
         // Mint a free NFT
-        await expect(nft.connect(user).mint()).to.emit(nft, "Transfer");
+        await expect(nft.connect(user).mint(1)).to.emit(nft, "Transfer");
         // .withArgs(ethers.constants.AddressZero, user.address, initialFreeMintLeft.sub(1));
 
         // Check that the number of free mints left has decreased
@@ -48,25 +48,25 @@ describe("NFT", async function() {
     });
 
     it("Should fail mint with message eth amount should be zero", async function() {
-        expect(nft.mint({ value: MINT_PRICE })).to.revertedWith("eth amount should be zero");
+        expect(nft.mint(1, { value: MINT_PRICE })).to.revertedWith("eth amount should be zero");
     });
 
     it("Should fail mint with message invalid eth amount", async function() {
         await (await nft.setFreeMintPaused(true)).wait();
-        await expect(nft.mint()).to.revertedWith("Invalid eth payment");
+        await expect(nft.mint(1)).to.revertedWith("Invalid eth payment");
     });
 
     it("Should fail mint with message Minting is pauased.", async function() {
-        expect(nft.mint()).to.revertedWith("Minting is pauased.");
+        expect(nft.mint(1)).to.revertedWith("Minting is pauased.");
     });
 
     it("Should price mint nft", async function() {
-        expect(await nft.mint({ value: MINT_PRICE }));
+        expect(await nft.mint(1, { value: MINT_PRICE }));
     });
 
     it("Should mint free nft when price is zero", async function() {
         await (await nft.setMintPrice(0)).wait();
-        expect(await nft.mint());
+        expect(await nft.mint(1));
         await (await nft.setMintPrice(MINT_PRICE)).wait();
     });
 
@@ -74,19 +74,23 @@ describe("NFT", async function() {
         await (await nft.setFreeMintPaused(false)).wait();
         const userFreeMintLeft =
             (await nft.maxFreeMintLimit()).toNumber() - (await nft.freeMintedCount(user.address)).toNumber();
-        for (let i = 0; i < userFreeMintLeft; i++) {
-            expect(await nft.connect(user).mint());
+
+        for (let i = 0; i < userFreeMintLeft - 1; i++) {
+            expect(await nft.connect(user).mint(1));
         }
-        await expect(nft.connect(user).mint()).to.revertedWith("Max wallet free mint limit reached");
+        await expect(nft.connect(user).mint(1)).to.revertedWith("Max wallet free mint limit reached");
     });
 
     it("Should revert with message Max wallet price mint limit reached", async function() {
         await (await nft.setFreeMintPaused(true)).wait();
 
-        for (let i = 0; i < (await nft.maxPriceMintLimit()).toNumber(); i++) {
-            expect(await nft.connect(user).mint({ value: MINT_PRICE }));
+        const userPriceMintLeft =
+            (await nft.maxPriceMintLimit()).toNumber() - (await nft.priceMintedCount(user.address)).toNumber();
+
+        for (let i = 0; i < userPriceMintLeft - 1; i++) {
+            expect(await nft.connect(user).mint(1, { value: MINT_PRICE }));
         }
-        await expect(nft.connect(user).mint({ value: MINT_PRICE })).to.revertedWith(
+        await expect(nft.connect(user).mint(1, { value: MINT_PRICE })).to.revertedWith(
             "Max wallet price mint limit reached"
         );
     });
@@ -96,9 +100,9 @@ describe("NFT", async function() {
         await (await nft.setFreeMintLeft(1)).wait();
         const [a, b, user2] = await ethers.getSigners();
 
-        expect(await nft.connect(user2).mint());
+        expect(await nft.connect(user2).mint(1));
 
-        await expect(nft.connect(user).mint()).to.revertedWith("Invalid eth payment");
+        await expect(nft.connect(user).mint(1)).to.revertedWith("Invalid eth payment");
     });
 
     it("Should set reveal token uri", async function() {

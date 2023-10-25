@@ -5,8 +5,11 @@ import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/common/ERC2981.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 contract NFT is ERC721, ERC2981, ReentrancyGuard, Ownable {
+    using SafeERC20 for IERC20;
+
     // base uri for metadata, this can only be updated once during reveal
     string public uri;
     // If true, minting will be paused
@@ -42,7 +45,7 @@ contract NFT is ERC721, ERC2981, ReentrancyGuard, Ownable {
 
     // Reverts if minting is paused
     modifier mintNotPaused() {
-        require(!mintPaused, "Minting is pauased.");
+        require(!mintPaused, "Minting is paused.");
         _;
     }
 
@@ -76,31 +79,24 @@ contract NFT is ERC721, ERC2981, ReentrancyGuard, Ownable {
      * If free mint is available, NFT will be minted for free,
      * else for the price set in the contract
      */
-    function mint() external payable mintNotPaused nonReentrant {
+    function mint(uint256 quantity) external payable mintNotPaused nonReentrant {
         // if free mints are over or disabled, charge mint payment
         if (mintPrice > 0 && (freeMintLeft == 0 || freeMintPaused)) {
-            require(msg.value == mintPrice, "Invalid eth payment");
+            uint256 totalPrice = mintPrice * quantity;
+            require(msg.value == totalPrice, "Invalid eth payment");
             payable(paymentRecipient).transfer(msg.value);
-            require(priceMintedCount[msg.sender]++ < maxPriceMintLimit, "Max wallet price mint limit reached");
+            priceMintedCount[msg.sender] += quantity;
+            require(priceMintedCount[msg.sender] < maxPriceMintLimit, "Max wallet price mint limit reached");
         } else {
             // free mint
             require(msg.value == 0, "eth amount should be zero");
-            require(freeMintedCount[msg.sender]++ < maxFreeMintLimit, "Max wallet free mint limit reached");
-            freeMintLeft--;
+            freeMintedCount[msg.sender] += quantity;
+            require(freeMintedCount[msg.sender] < maxFreeMintLimit, "Max wallet free mint limit reached");
+            freeMintLeft -= quantity;
         }
-        _mint(msg.sender, nextTokenId++);
-        require(nextTokenId <= MAX_COLLECTION_SIZE - maxOwnerMintLimit, "Max already minted");
-    }
-
-    function batchMint(uint256 quantity) external payable mintNotPaused nonReentrant {
-        uint256 totalPrice = mintPrice * quantity;
-        require(msg.value == totalPrice, "Invalid eth payment");
-        payable(paymentRecipient).transfer(msg.value);
-
         for (uint i = 0; i < quantity; i++) {
-            require(priceMintedCount[msg.sender]++ < maxPriceMintLimit, "Max wallet price mint limit reached");
-            _mint(msg.sender, nextTokenId++);
             require(nextTokenId <= MAX_COLLECTION_SIZE - maxOwnerMintLimit, "Max already minted");
+            _mint(msg.sender, nextTokenId++);
         }
     }
 
@@ -159,5 +155,13 @@ contract NFT is ERC721, ERC2981, ReentrancyGuard, Ownable {
 
     function setMaxOwnerMintLimit(uint256 _maxOwnerMintLimit) external onlyOwner {
         maxOwnerMintLimit = _maxOwnerMintLimit;
+    }
+
+    function rescueTokens(IERC20 token, address recipient, uint256 amount) external onlyOwner {
+        token.safeTransfer(recipient, amount);
+    }
+
+    function rescueEth(address payable recipient, uint256 amount) external onlyOwner {
+        recipient.transfer(amount);
     }
 }
